@@ -15,7 +15,6 @@ from gymnasium import spaces
 from stable_baselines3.common.base_class import BaseAlgorithm
 from stable_baselines3.common.callbacks import BaseCallback
 from stable_baselines3.common.noise import ActionNoise, VectorizedActionNoise
-from stable_baselines3.common.policies import BasePolicy
 from stable_baselines3.common.save_util import load_from_pkl, save_to_pkl
 from stable_baselines3.common.type_aliases import GymEnv, MaybeCallback, RolloutReturn, Schedule, TrainFreq, TrainFrequencyUnit
 from stable_baselines3.common.utils import safe_mean, should_collect_more_steps
@@ -24,6 +23,7 @@ from stable_baselines3.her.her_replay_buffer import HerReplayBuffer
 
 from diff_rl.common.buffers import DictReplayBuffer, ReplayBuffer
 from diff_rl.common.consistency import Consistency_Model
+from diff_rl.common.policies import BasePolicy
 
 
 class OffPolicyAlgorithm(BaseAlgorithm):
@@ -301,7 +301,7 @@ class OffPolicyAlgorithm(BaseAlgorithm):
 
             state = th.FloatTensor(self._last_obs.reshape(1, -1)).to(self.device)
             scaled_action = self.consistency_model.sample(model=self.actor, state=state).cpu().data.numpy()
-
+		#state = th.FloatTensor(self._last_obs.reshape(1, -1)).to(self.device)
             # state_rpt = th.repeat_interleave(state, repeats=50, dim=0)
 
             # # This is sample from consistency model

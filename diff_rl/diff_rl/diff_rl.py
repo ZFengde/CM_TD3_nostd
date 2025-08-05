@@ -10,11 +10,11 @@ from torch.nn import functional as F
 from stable_baselines3.common.noise import ActionNoise
 from stable_baselines3.common.type_aliases import GymEnv, MaybeCallback, Schedule
 from stable_baselines3.common.utils import get_parameters_by_name, polyak_update
-from stable_baselines3.common.policies import BasePolicy, ContinuousCritic
 
 from diff_rl.common.buffers import ReplayBuffer
 from diff_rl.common.off_policy_algorithm import OffPolicyAlgorithm
 from diff_rl.diff_rl.policies import Actor, MlpPolicy, TD3Policy
+from diff_rl.common.policies import BasePolicy, ContinuousCritic
 
 SelfCM_TD3 = TypeVar("SelfCM_CM_TD3", bound="CM_TD3")
 
@@ -158,7 +158,19 @@ class CM_TD3(OffPolicyAlgorithm):
                                               state=replay_data.observations,
                                               )
                 cm_losses = compute_cm_losses()
-                actor_loss = (cm_losses["consistency_loss"] - self.critic.q1_forward(replay_data.observations, sampled_action)).mean()
+
+                G = 50
+                state_rpt = th.repeat_interleave(replay_data.observations.unsqueeze(1), repeats=G, dim=1)
+                actions_all, adv_all = self.consistency_model.compute_action_advantages(
+                    critic=self.critic,
+                    actor=self.actor,
+                    state_rpt=state_rpt,
+                ) 
+                weights = th.exp(adv_all).detach()
+                # weights = (adv_all**2).detach()
+                q_loss = self.critic.q1_batch_forward(state_rpt, actions_all)
+                q_loss = weights * q_loss
+                actor_loss = (cm_losses["consistency_loss"] - q_loss).mean()
                 actor_losses.append(actor_loss.item())
 
                 # Optimize the actor

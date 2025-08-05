@@ -1,2 +1,7 @@
-TD3 modified version with pure CM with CM loss, this one definitely works! Don't mess up!
+try use A in the actor loss
+	1. use a from buffer to train cm loss
+		1. weights = th.exp(adv_all).detach() on vscode
+		2. weights = (adv_all**2).detach() on terminal
+	2. use uniform distribution a to train cm loss
 
+take the cm loss as the entropy

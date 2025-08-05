@@ -6,7 +6,7 @@ import torch.nn.functional as F
 from diff_rl.common.helpers import append_dims, append_zero, mean_flat
 from stable_baselines3.common.preprocessing import get_action_dim
 
-def get_weightings(weight_schedule, snrs, sigma_data):
+def get_weightings(weight_schedule, snrs, sigma_data): # snr = sigmas**-2
     if weight_schedule == "snr":
         weightings = snrs
     elif weight_schedule == "snr+1":
@@ -176,3 +176,12 @@ class Consistency_Model:
         s_in = x_T.new_ones([x_T.shape[0]]) # stands for sigma input
         x_0 = self.denoise(model, x_T, self.sigmas[0] * s_in, state)[1]
         return x_0
+    
+    def compute_action_advantages(self, critic, actor, state_rpt):
+        actions = self.batch_multi_sample(model=actor, state=state_rpt)        # [B, G, act_dim]
+        q_values = critic.q1_batch_forward(state_rpt, actions)            # [B, G]
+        mean_q = q_values.mean(dim=1, keepdim=True)
+        std_q = q_values.std(dim=1, keepdim=True) + 1e-8
+        advantages = (q_values - mean_q) / std_q                                # [B, G]
+
+        return actions, advantages

@@ -4,7 +4,6 @@ import torch as th
 from gymnasium import spaces
 from torch import nn
 
-from stable_baselines3.common.policies import BasePolicy, ContinuousCritic
 from stable_baselines3.common.preprocessing import get_action_dim
 from stable_baselines3.common.torch_layers import (
     BaseFeaturesExtractor,
@@ -12,7 +11,9 @@ from stable_baselines3.common.torch_layers import (
     get_actor_critic_arch,
 )
 from stable_baselines3.common.type_aliases import Schedule
+
 from diff_rl.common.helpers import SinusoidalPosEmb
+from diff_rl.common.policies import BasePolicy, ContinuousCritic
 
 # Need to modify here to make it have a time input
 class Actor(BasePolicy):
@@ -225,7 +226,8 @@ class MLP(nn.Module):
 
         t = self.time_mlp(time)
         if state.dim() == 3: # TODO, be careful here, cuz it can only repeat 50 times
-            t = th.repeat_interleave(t.unsqueeze(1), repeats=50, dim=1)
+            repeats = state.shape[1]
+            t = th.repeat_interleave(t.unsqueeze(1), repeats=repeats, dim=1)
         if state is not None:
             x = th.cat([x, t, state], dim=-1)
         else:
